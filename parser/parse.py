@@ -6,6 +6,7 @@ from urllib.parse import parse_qs, urlparse
 
 import gevent
 from gevent import monkey
+
 monkey.patch_all()
 
 from bs4 import BeautifulSoup
@@ -17,22 +18,26 @@ MONGO_TOPICS = CLIENT.eksi.topics
 TOPICS_PATH = "data/"
 GEVENT_JOBS = []
 
+
 def get_topic_files():
     """ basliklari getirir """
     topics = (topic for topic in listdir(TOPICS_PATH) if topic.startswith("show.asp"))
 
     return topics
 
+
 def get_content_from_file(path):
     """ verilen pathin icerigini getirir """
     file_path = join(TOPICS_PATH, path)
-    with open(file_path, mode="r", encoding="iso-8859-9") as file:  
-        return file.read() 
+    with open(file_path, mode="r", encoding="iso-8859-9") as file:
+        return file.read()
+
 
 def get_entry_tags(html_doc):
     """ verilen html icerisindeki entryleri getirir """
     soup = BeautifulSoup(html_doc, "html.parser")
     return soup.select("ol#el li")
+
 
 def parse_entry_tag(entry_tag):
     """ verilen html entry'i objeye cevirir """
@@ -59,28 +64,33 @@ def parse_entry_tag(entry_tag):
 
     return {"id": id, "nick": nick, "date": date, "text": text}
 
+
 def get_title_from_file(file_name):
     """ dosya isminden topic adini al """
     file_name = file_name.replace("@", "?").replace(".htm", "")
     qs_list = parse_qs(urlparse(file_name).query)
-    
+
     if "t" not in qs_list:
         return ""
-    
-    file_name = qs_list["t"][0]    
-    
+
+    file_name = qs_list["t"][0]
+
     return file_name
+
 
 def insert_documents(counter, requests, last_insert=False):
     """ bulk insert  """
     global GEVENT_JOBS
 
     if counter > 1000 or last_insert:
-        GEVENT_JOBS.append(gevent.spawn(MONGO_TOPICS.bulk_write, requests.copy(), False))
+        GEVENT_JOBS.append(
+            gevent.spawn(MONGO_TOPICS.bulk_write, requests.copy(), False)
+        )
         requests.clear()
         return 0
 
     return counter + 1
+
 
 def parse():
     """ donusum islemini gerceklestirir """
@@ -107,10 +117,10 @@ def parse():
 
             requests.append(ReplaceOne({"id": entry["id"]}, entry, upsert=True))
             counter = insert_documents(counter, requests)
-            
 
     insert_documents(counter, requests, True)
     gevent.joinall(GEVENT_JOBS)
+
 
 if __name__ == "__main__":
     print(datetime.now())
