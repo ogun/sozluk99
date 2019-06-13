@@ -7,10 +7,10 @@ from urllib.parse import parse_qs, urlparse
 import gevent
 from gevent import monkey
 
-monkey.patch_all()
-
 from bs4 import BeautifulSoup
 from pymongo import MongoClient, ReplaceOne
+
+monkey.patch_all()
 
 CLIENT = MongoClient("localhost", 27017)
 MONGO_TOPICS = CLIENT.eksi.topics
@@ -41,7 +41,7 @@ def get_entry_tags(html_doc):
 
 def parse_entry_tag(entry_tag):
     """ verilen html entry'i objeye cevirir """
-    id = entry_tag["id"].strip("d")
+    entry_id = entry_tag["id"].strip("d")
 
     nick_tag = entry_tag.select_one("div.aul a")
     nick = nick_tag.get_text()
@@ -62,7 +62,7 @@ def parse_entry_tag(entry_tag):
 
     text = entry_tag.get_text()
 
-    return {"id": id, "nick": nick, "date": date, "text": text}
+    return {"id": entry_id, "nick": nick, "date": date, "text": text}
 
 
 def get_title_from_file(file_name):
